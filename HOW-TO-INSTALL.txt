@@ -1,0 +1,324 @@
+﻿================================================================
+wodrs — Sinhala <-> wodrs Converter
+HOW TO INSTALL ON A NEW WINDOWS 10 MACHINE
+================================================================
+
+WHAT THIS IS
+------------
+wodrs is a small tool for converting between:
+  - Unicode Sinhala (the normal text you type on any computer)
+  - wodrs legacy bytes (the old ASCII-based encoding you use
+    with the Wodrs font in CorelDRAW / Illustrator)
+
+It has two parts:
+  - wodrs     : a command-line tool
+  - wodrs GUI : a two-pane window (paste on left, convert on right)
+
+Both are built on Python and require nothing else.
+
+
+WHAT'S IN THIS ZIP
+------------------
+  wodrs.py            CLI entry point
+  wodrs_converter.py  Sinhala -> wodrs conversion logic
+  wodrs_to_si.py      wodrs -> Sinhala conversion logic
+  wodrs_gui.py        two-pane GUI
+  wodrs.cmd           Windows launcher for the CLI
+  run_gui.vbs         silent Windows launcher for the GUI
+  install-wodrs.ps1   one-click installer script
+  Wodrs.ttf           the Wodrs font (for viewing wodrs bytes)
+  test.txt            sample Sinhala file for testing
+  HOW-TO-INSTALL.txt  this file
+
+
+REQUIREMENTS
+------------
+  - Windows 10 (also works on Windows 11)
+  - Python 3.7 or newer (with Tkinter - comes with the
+    standard Windows installer)
+  - No internet needed after install
+  - No administrator rights needed
+  - Wodrs.ttf is included in this package and installed
+    automatically (per-user, no admin needed) by install-wodrs.ps1.
+    If you copy files manually, install the font yourself:
+    right-click Wodrs.ttf -> Install
+
+
+STEP 1 - CHECK IF PYTHON IS INSTALLED
+-------------------------------------
+Open PowerShell (press Windows key, type "PowerShell", press Enter).
+
+Run:
+    python --version
+
+If you see something like:
+    Python 3.12.1
+
+...you're ready - skip to Step 2.
+
+If you see:
+    'python' is not recognized ...
+
+...install Python first:
+
+  1. Go to:  https://www.python.org/downloads/windows/
+  2. Download the latest "Windows installer (64-bit)".
+  3. Run the installer.
+  4. IMPORTANT: tick the box "Add Python to PATH"
+  5. IMPORTANT: leave "Install for all users" ticked.
+  6. Click "Install Now" and wait for it to finish.
+  7. Close and reopen PowerShell.
+  8. Run "python --version" again to confirm it works.
+
+
+STEP 2 - EXTRACT THE ZIP
+------------------------
+Extract the zip to any temporary folder, e.g. Desktop.
+
+After extracting, you should see a folder like:
+    wodrs-portable\
+       wodrs.py
+       wodrs_converter.py
+       ... (etc.)
+
+
+STEP 3 - INSTALL
+----------------
+There are two ways. Pick one.
+
+  WAY A - Automatic (recommended)
+
+    1. Open PowerShell.
+    2. Navigate into the extracted folder:
+           cd "$env:USERPROFILE\Desktop\wodrs-portable"
+    3. Run:
+           powershell -ExecutionPolicy Bypass -File .\install-wodrs.ps1
+    4. You should see:
+           Installation complete.
+    5. Close and reopen PowerShell.
+
+  WAY B - Manual (if the script is blocked by policy)
+
+    Open PowerShell and paste this single block:
+
+    $here = (Get-Location).Path
+    $dir  = "$env:LOCALAPPDATA\Programs\wodrs"
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    Copy-Item "$here\*.py"  $dir -Force
+    Copy-Item "$here\*.cmd" $dir -Force
+    Copy-Item "$here\*.vbs" $dir -Force
+
+    $old = [Environment]::GetEnvironmentVariable("Path", "User")
+    if ($old -notlike "*$dir*") {
+        [Environment]::SetEnvironmentVariable("Path", "$old;$dir", "User")
+    }
+
+    $startMenu = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs"
+    $ws  = New-Object -ComObject WScript.Shell
+    $lnk = $ws.CreateShortcut("$startMenu\wodrs.lnk")
+    $lnk.TargetPath        = "$dir\run_gui.vbs"
+    $lnk.Arguments         = "`"$dir\wodrs_gui.py`""
+    $lnk.WorkingDirectory  = $dir
+    $lnk.IconLocation      = "imageres.dll,197"
+    $lnk.Description       = "wodrs - Sinhala <-> wodrs converter"
+    $lnk.Save()
+
+    # Font (per-user install)
+    $fontDstDir = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
+    New-Item -ItemType Directory -Force -Path $fontDstDir | Out-Null
+    Copy-Item "$here\Wodrs.ttf" "$fontDstDir\Wodrs.ttf" -Force
+    $regPath = "HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
+    if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+    Set-ItemProperty -Path $regPath -Name "Wodrs (TrueType)" -Value "Wodrs.ttf"
+
+    Write-Host "Installed. Close and reopen PowerShell."
+
+
+STEP 4 - VERIFY THE INSTALL
+---------------------------
+Close and reopen PowerShell (required - the new PATH
+only becomes active in a new window).
+
+Run:
+    wodrs
+
+You should see the help text listing three commands:
+    si2wodrs
+    wodrs2si
+    check
+
+Then run a quick test:
+
+    cd "$env:USERPROFILE\Desktop\wodrs-portable"
+    wodrs check test.txt
+
+You should see:
+    Result: OK - only quote normalization
+
+If you see that, everything is working.
+
+
+STEP 5 - OPEN THE GUI
+---------------------
+Press the Windows key, type "wodrs", press Enter.
+
+A window appears with two panes:
+    Left  : paste / type here
+    Right : converted result
+
+Default mode is "Sinhala -> wodrs".
+Switch modes with the radio buttons at the top.
+
+
+HOW TO USE - THREE DAILY WORKFLOWS
+----------------------------------
+
+  1. Convert Sinhala to wodrs (for CorelDRAW / Illustrator):
+     - Open GUI from Start menu.
+     - Mode: Sinhala -> wodrs  (default).
+     - Paste Sinhala in the left pane.
+     - Click "Convert" (or Ctrl+Enter).
+     - Click "Copy result".
+     - Paste into CorelDRAW, set font to "Wodrs".
+
+  2. Extract Sinhala from a wodrs file (for WhatsApp, email):
+     - Open GUI.
+     - Mode: wodrs -> Sinhala.
+     - Paste wodrs bytes on the left.
+     - Click "Convert".
+     - Click "Copy result".
+     - Paste into WhatsApp / email / Notepad.
+
+  3. Batch convert from PowerShell:
+     wodrs si2wodrs article.txt          (creates article_EN.txt)
+     wodrs wodrs2si article_EN.txt       (creates article_SI.txt)
+     wodrs check article.txt             (round-trip test)
+
+
+IMPORTANT RULE ABOUT WODRS FILES
+--------------------------------
+WODRS BYTE FILES (.txt containing wodrs bytes) MUST NOT
+BE OPENED AND SAVED IN NOTEPAD.
+
+If you open one to view, close without saving. Saving in
+Notepad can convert the bytes to UTF-8 and permanently
+destroy the wodrs encoding.
+
+The GUI and CLI avoid this problem automatically -
+they write raw bytes and never re-encode.
+
+
+FILES INSTALLED WHERE
+---------------------
+After install, scripts live in:
+
+    %LOCALAPPDATA%\Programs\wodrs\
+
+Typical full path:
+    C:\Users\<YOURNAME>\AppData\Local\Programs\wodrs\
+
+The font Wodrs.ttf is installed per-user at:
+
+    %LOCALAPPDATA%\Microsoft\Windows\Fonts\Wodrs.ttf
+
+and registered under:
+
+    HKCU\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts
+
+
+HOW TO UNINSTALL
+----------------
+1. Delete the folder:
+       %LOCALAPPDATA%\Programs\wodrs\
+2. Delete the shortcut:
+       %APPDATA%\Microsoft\Windows\Start Menu\Programs\wodrs.lnk
+3. Remove the PATH entry (optional):
+   - Open Settings -> System -> About -> Advanced system settings
+   - Click "Environment Variables"
+   - Under "User variables", select Path, click Edit
+   - Remove the entry ending in \Programs\wodrs
+   - OK, OK, OK
+4. Remove the font (optional):
+   - Windows key -> type "Fonts" -> Enter
+   - Find "Wodrs", right-click -> Delete
+5. Close and reopen PowerShell.
+
+Nothing else is left behind.
+
+
+TROUBLESHOOTING
+---------------
+
+  Problem: "wodrs is not recognized"
+  Fix    : You forgot to close and reopen PowerShell after
+           install. Close all PowerShell windows, open a new one.
+
+  Problem: "python is not recognized"
+  Fix    : Python is not installed, or was installed without
+           "Add Python to PATH". Reinstall Python, tick the box.
+
+  Problem: GUI doesn't open
+  Fix    : Open normal PowerShell and run:
+               python "$env:LOCALAPPDATA\Programs\wodrs\wodrs_gui.py"
+           If an error appears, read the message.
+
+  Problem: Sinhala shows as boxes / squares in the GUI
+  Fix    : Install a Sinhala display font:
+             - Iskoola Pota (ships with Windows 10)
+             - Noto Sans Sinhala (free from Google Fonts)
+           Right-click the .ttf -> "Install for all users".
+
+  Problem: wodrs preview in the right pane shows Latin letters
+  Fix    : The Wodrs font is not installed. Run install-wodrs.ps1
+           again, or right-click Wodrs.ttf -> Install.
+           Then restart the GUI.
+
+  Problem: Sinhala in CorelDRAW / Illustrator shows as Latin letters
+  Fix    : Set the font of the pasted text to "Wodrs".
+           If "Wodrs" is not in the font list, install the font:
+             right-click Wodrs.ttf -> Install (or "Install for all users")
+           Then restart CorelDRAW / Illustrator.
+
+
+BACKUP ADVICE
+-------------
+Keep this zip file somewhere safe (external drive, cloud).
+
+If your machine dies, or you buy a new one:
+  1. Install Python (Step 1).
+  2. Extract this zip.
+  3. Run install-wodrs.ps1 (Step 3, Way A).
+
+You'll be back up in 5 minutes.
+
+Also back up the folder:
+    %LOCALAPPDATA%\Programs\wodrs\
+...after install. It's a snapshot of what worked.
+
+
+CREDITS
+-------
+wodrs converter
+  - Built with reference to the legacy wodrs font encoding.
+  - Supports all Sinhala characters used in modern text.
+  - Known limitation: straight quotes (") normalize to
+    curly quotes on round-trip, because the wodrs byte
+    encoding only distinguishes open/close position,
+    not glyph style.
+
+  - Test file (test.txt) covers:
+      * Yansaya (shya) and rakaransaya
+      * Reph
+      * Kombuva variants
+      * GROUP2 pillas
+      * Anusvara
+      * Rare letters (nda, sha, sha)
+      * Straight quotes, exclamation mark
+
+  - Development: iterative byte-by-byte debugging.
+    If you find a bug, the fix lives in wodrs_to_si.py
+    (reverse direction) or wodrs_converter.py (forward).
+
+================================================================
+END OF HOW-TO-INSTALL
+================================================================
